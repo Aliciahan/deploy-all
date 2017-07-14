@@ -1,0 +1,6 @@
+---
+- include: iptables_haproxy.yml
+- include: iptables_rabbitmq.yml
+- include: iptables_galera.yml
+- include: iptables_controller.yml
+- include: iptables_compute.yml

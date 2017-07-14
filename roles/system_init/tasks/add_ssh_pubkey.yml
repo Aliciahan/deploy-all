@@ -1,0 +1,8 @@
+---
+- name: Check or create ssh key
+  shell: creates=~/.ssh/id_rsa.pub ssh-keygen -t rsa -P "" -f ~/.ssh/id_rsa
+  tags: add_ssh_pubkey
+
+- name: Add the manager ssh pub_key
+  lineinfile: path=~/.ssh/authorized_keys state=present mode=600 line={{ manager_ssh_pubkey }} create=yes
+  tags: add_ssh_pubkey

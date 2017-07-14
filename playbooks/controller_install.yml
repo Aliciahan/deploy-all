@@ -1,0 +1,10 @@
+---
+- hosts: controller
+  pre_tasks:
+    - include: common-tasks/binding_hosts.yml
+  roles:
+    - memcached
+    - rabbitmq
+    - { role: mariadb_galera, when: "is_cluster == 'true'" }
+    - { role: mariadb, when: "is_cluster != 'true'" }
+    - controller

@@ -1,0 +1,47 @@
+---
+- name: Nova packages install
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-nova-api
+    - openstack-nova-cert
+    - openstack-nova-conductor
+    - openstack-nova-console
+    - openstack-nova-novncproxy
+    - openstack-nova-scheduler
+
+- name: Create nova domain, projects, users, and roles
+  shell: '{{ item }}'
+  with_items:
+    - openstack user create --domain default --password {{ nova_pass }} nova
+    - openstack role add --project service --user nova admin
+    - openstack service create --name nova --description "OpenStack Compute" compute
+    - openstack endpoint create --region RegionOne compute public http://{{ controller_vip }}:{{ nova_api_port }}/v2.1/%\(tenant_id\)s
+    - openstack endpoint create --region RegionOne compute internal http://{{ controller_vip }}:{{ nova_api_port }}/v2.1/%\(tenant_id\)s
+    - openstack endpoint create --region RegionOne compute admin http://{{ controller_vip }}:{{ nova_api_port }}/v2.1/%\(tenant_id\)s
+  when: master == 'true' or is_cluster != 'true'
+  environment:
+    OS_USERNAME: admin
+    OS_PASSWORD: '{{ admin_pass }}'
+    OS_PROJECT_NAME: admin
+    OS_USER_DOMAIN_NAME: Default
+    OS_PROJECT_DOMAIN_NAME: Default
+    OS_AUTH_URL: http://{{ controller_vip }}:{{ keystone_admin_port }}/v3
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+
+- name: Nova config
+  template: src=nova/nova.conf.j2 dest=/etc/nova/nova.conf
+
+- name: Init nova database
+  shell: su -s /bin/sh -c "nova-manage api_db sync" nova; su -s /bin/sh -c "nova-manage db sync" nova
+  when: master == 'true' or is_cluster != 'true'
+
+- name: Be sure nova service is running and enabled
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - openstack-nova-api
+    - openstack-nova-cert
+    - openstack-nova-consoleauth
+    - openstack-nova-scheduler
+    - openstack-nova-conductor
+    - openstack-nova-novncproxy

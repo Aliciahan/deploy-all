@@ -1,0 +1,44 @@
+---
+- name: Pull erlang.cookie to /tmp
+  synchronize: mode=pull src=/var/lib/rabbitmq/.erlang.cookie dest=/tmp/erlang.cookie.j2 archive=yes checksum=yes
+  when: master == "true"
+
+- name: Copy erlang cookie
+  copy: src=/tmp/erlang.cookie.j2 dest=/var/lib/rabbitmq/.erlang.cookie owner=rabbitmq group=rabbitmq mode=400
+  when: master != "true"
+
+- name: Restart rabbitmq node
+  service: name=rabbitmq-server state=restarted
+  when: master != "true"
+
+- name: Stopp rabbitmq app
+  command: rabbitmqctl stop_app
+  when: master != "true"
+
+- name: Get rabbitmq master hostname
+  shell: hostname
+  register: master_hostname
+  when: master == "true"
+  run_once: true
+
+- name: Join rabbitmq cluster
+  command: rabbitmqctl join_cluster rabbit@"{{ master_hostname.stdout }}"
+  when: master != "true"
+
+- name: Start rabbitmq app
+  command: rabbitmqctl start_app
+  when: master != "true"
+
+- name: Set rabbitmq ha policy
+  rabbitmq_policy:
+    name: "ha-all"
+    pattern: '^(?!amq\.).*'
+    tags:
+      ha-mode: all
+      ha-sync-mode: automatic
+    state: present
+  run_once: true
+
+- name: Delete erlang cookie
+  local_action: file path=/tmp/erlang.cookie.j2 state=absent
+  run_once: true

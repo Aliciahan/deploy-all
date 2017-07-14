@@ -1,0 +1,5 @@
+---
+- name: Network config
+  template: src=network.sh.j2 dest=/tmp/network.sh
+  notify: Exec network config
+  tags: network_config

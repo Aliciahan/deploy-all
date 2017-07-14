@@ -1,0 +1,96 @@
+[DEFAULT]
+notification_format=unversioned
+enabled_apis=osapi_compute,metadata
+auth_strategy = keystone
+my_ip = {{ ansible_default_ipv4.address }}
+use_neutron = True
+linuxnet_interface_driver = nova.network.linux_net.LinuxOVSInterfaceDriver
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+scheduler_driver = nova.scheduler.filter_scheduler.FilterScheduler
+scheduler_available_filters = nova.scheduler.filters.all_filters
+scheduler_default_filters = RetryFilter, AvailabilityZoneFilter, RamFilter, DiskFilter, ComputeFilter, ComputeCapabilitiesFilter, ImagePropertiesFilter, ServerGroupAntiAffinityFilter, ServerGroupAffinityFilter, CoreFilter, NumInstancesFilter, SameHostFilter, DifferentHostFilter
+osapi_compute_workers=8
+metadata_workers=8
+api_paste_config=api-paste.ini
+cpu_allocation_ratio=1.5
+disk_allocation_ratio=1.0
+max_instances_per_host=30
+ram_allocation_ratio=1.0
+default_availability_zone=nova
+quota_instances=32
+quota_cores=32
+quota_ram=98304
+quota_floating_ips=32
+quota_fixed_ips=-1
+quota_metadata_items=128
+quota_injected_files=5
+quota_injected_file_content_bytes=10240
+quota_injected_file_path_length=255
+quota_security_groups=10
+quota_security_group_rules=20
+quota_key_pairs=100
+quota_server_groups=10
+quota_server_group_members=10
+report_interval=10
+
+[api_database]
+connection = mysql+pymysql://nova:{{ nova_dbpass }}@{{ mysql_host }}/nova_api
+
+[database]
+connection = mysql+pymysql://nova:{{ nova_dbpass }}@{{ mysql_host }}/nova
+
+[keystone_authtoken]
+auth_uri = http://{{ controller_vip }}:{{ keystone_public_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+memcached_servers = {{ memcached_servers }}
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = {{ nova_pass }}
+
+[oslo_messaging_rabbit]
+{% if is_cluster == "true" %}
+rabbit_hosts={{ rabbitmq_hosts }}
+rabbit_retry_interval=1
+rabbit_retry_backoff=2
+rabbit_max_retries=0
+rabbit_ha_queues=true
+{% else %}
+rabbit_host={{ controller_vip }}
+{% endif %}
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_pass }}
+
+[cache]
+enabled = true
+backend = oslo_cache.memcache_pool
+memcache_servers = {{ memcached_servers }}
+
+[vnc]
+vncserver_listen = {{ ansible_default_ipv4.address }}
+vncserver_proxyclient_address = {{ ansible_default_ipv4.address }}
+
+[glance]
+api_servers = http://{{ controller_vip }}:{{ glance_api_port }}
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+
+[neutron]
+url = http://{{ controller_vip }}:{{ neutron_api_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = {{ neutron_pass }}
+
+service_metadata_proxy = True
+metadata_proxy_shared_secret = {{ metadata_secret }}
+
+[cinder]
+os_region_name = RegionOne

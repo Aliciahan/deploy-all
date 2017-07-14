@@ -1,0 +1,20 @@
+---
+- name: Start mariadb
+  service: name=mariadb state=started enabled=yes
+
+- name: Create db
+  mysql_db: name=zabbix state=present encoding=utf8
+
+- name: Create zabbix db user
+  mysql_user: name={{ DBUser }} password={{ DBPassword }} priv='zabbix.*:ALL,GRANT' state=present
+
+- name: Get zabbix version
+  shell: zabbix_server -V |head -1 |awk '{print $3}'
+  register: zabbix_version
+
+- name: Unzip sql file
+  shell: zcat /usr/share/doc/zabbix-server-mysql-{{ zabbix_version.stdout }}/create.sql.gz > /usr/share/doc/zabbix-server-mysql-{{ zabbix_version.stdout }}/create.sql
+
+- name: Import db
+  mysql_db: name=zabbix state=import target=/usr/share/doc/zabbix-server-mysql-{{ zabbix_version.stdout }}/create.sql
+  ignore_errors: True

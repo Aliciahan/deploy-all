@@ -1,0 +1,5 @@
+---
+#- include: openstack_iptables_config.yml
+- include: haproxy_keepalived_install.yml
+- include: controller_install.yml
+- include: compute_install.yml

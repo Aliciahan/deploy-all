@@ -1,0 +1,48 @@
+---
+- name: Install glance packages
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-glance
+
+- name: Create glance domain, projects, users, and roles
+  shell: "{{ item }}"
+  with_items:
+    - 'openstack user create --domain default --password {{ glance_pass }} glance'
+    - 'openstack role add --project service --user glance admin'
+    - 'openstack service create --name glance --description "OpenStack Image service" image'
+    - 'openstack endpoint create --region RegionOne image public http://{{ controller_vip }}:{{ glance_api_port }}'
+    - 'openstack endpoint create --region RegionOne image internal http://{{ controller_vip }}:{{ glance_api_port }}'
+    - 'openstack endpoint create --region RegionOne image admin http://{{ controller_vip }}:{{ glance_api_port }}'
+  when: master == 'true' or is_cluster != 'true'
+  environment:
+    OS_USERNAME: admin
+    OS_PASSWORD: '{{ admin_pass }}'
+    OS_PROJECT_NAME: admin
+    OS_USER_DOMAIN_NAME: Default
+    OS_PROJECT_DOMAIN_NAME: Default
+    OS_AUTH_URL: http://{{ controller_vip }}:{{ keystone_admin_port }}/v3
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+
+- name: Glance related config
+  template: src={{ item.src }} dest={{ item.dest }}
+  with_items:
+    - { src: 'glance/glance-api.conf.j2',dest: '/etc/glance/glance-api.conf' }
+    - { src: 'glance/glance-registry.conf.j2',dest: '/etc/glance/glance-registry.conf' }
+    - { src: '/tmp/ceph.client.glance.keyring',dest: '/etc/ceph/ceph.client.glance.keyring' }
+    - { src: '/tmp/ceph.conf',dest: '/etc/ceph/ceph.conf' }
+
+- name: Change file owner and group
+  file: path=/etc/ceph/ceph.client.glance.keyring owner=glance group=glance
+
+- name: Init glance database
+  shell: "{{ item }}"
+  with_items:
+    - 'su -s /bin/sh -c "glance-manage db_sync" glance'
+  when: master == 'true' or is_cluster != 'true'
+
+- name: Start openstack-glance-api openstack-glance-registry service
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - openstack-glance-api
+    - openstack-glance-registry

@@ -1,0 +1,5 @@
+---
+#- include: zabbix_server_iptables.yml
+- include: zabbix_server_install.yml
+- include: zabbix_server_db.yml
+- include: zabbix_server_config.yml

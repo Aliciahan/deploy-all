@@ -1,0 +1,59 @@
+---
+- name: Create temporarily execute the user
+  shell: '{{ item }}'
+  with_items:
+    - /usr/local/mysql/bin/mysql -uroot -e "grant all on *.* to tempa@'%' identified by '5tgbcde31qaz' with grant option;"
+    - /usr/local/mysql/bin/mysql -uroot -e "flush privileges;"
+  tags: tempa_user
+
+- name: Create database to openstack
+  mysql_db:
+    login_host: "{{ mysql_login_host }}"
+    login_port: "{{ mysql_login_port }}"
+    login_user: "tempa"
+    login_password: "5tgbcde31qaz"
+    config_file: /etc/my.cnf
+    encoding: "utf8"
+    state: present
+    name: "{{ item }}"
+  with_items:
+    - keystone
+    - glance
+    - cinder
+    - neutron
+    - nova
+    - nova_api
+
+- name: Create mysql user to openstack
+  mysql_user:
+    login_host: "{{ mysql_login_host }}"
+    login_port: "{{ mysql_login_port }}"
+    login_user: "tempa"
+    login_password: "5tgbcde31qaz"
+    config_file: /etc/my.cnf
+    state: present
+    append_privs: true
+    name: "{{ item.user }}"
+    password: "{{ item.passwd }}"
+    priv: "{{ item.database }}.*:ALL"
+    host: "{{ item.host }}"
+  with_items:
+    - { user: "keystone", host: "localhost", database: "keystone", passwd: "{{ keystone_dbpass }}"}
+    - { user: "keystone", host: "%", database: "keystone", passwd: "{{ keystone_dbpass }}"}
+    - { user: "glance", host: "localhost", database: "glance", passwd: "{{ glance_dbpass }}"}
+    - { user: "glance", host: "%", database: "glance", passwd: "{{ glance_dbpass }}"}
+    - { user: "cinder", host: "localhost", database: "cinder", passwd: "{{ cinder_dbpass }}"}
+    - { user: "cinder", host: "%", database: "cinder", passwd: "{{ cinder_dbpass }}"}
+    - { user: "neutron", host: "localhost", database: "neutron", passwd: "{{ neutron_dbpass }}"}
+    - { user: "neutron", host: "%", database: "neutron", passwd: "{{ neutron_dbpass }}"}
+    - { user: "nova", host: "localhost", database: "nova", passwd: "{{ nova_dbpass }}"}
+    - { user: "nova", host: "%", database: "nova", passwd: "{{ nova_dbpass }}"}
+    - { user: "nova", host: "localhost", database: "nova_api", passwd: "{{ nova_dbpass }}"}
+    - { user: "nova", host: "%", database: "nova_api", passwd: "{{ nova_dbpass }}"}
+
+- name: Delete temporarily execute the user
+  shell: '{{ item }}'
+  with_items:
+    - /usr/local/mysql/bin/mysql -uroot -e "delete from mysql.user where user='tempa';"
+    - /usr/local/mysql/bin/mysql -uroot -e "flush privileges;"
+  tags: tempa_user

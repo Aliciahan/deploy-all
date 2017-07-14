@@ -1,0 +1,51 @@
+[controller]
+#Select a node as the execution node,
+#and add the parameter master=true to this node
+#E.g: 192.168.1.100 master=true
+
+[controller:vars]
+master=false
+is_cluster=true
+
+[compute]
+
+[compute:vars]
+is_cluster=true
+
+[haproxy_keepalived]
+#Select a node as the execution node,
+#and add the parameter master=true to this node
+#E.g: 192.168.2.100 master=true
+
+[haproxy_keepalived:vars]
+master=false
+is_cluster=true
+
+[openstack:children]
+controller
+compute
+haproxy_keepalived
+
+[memcached]
+
+[memcached:vars]
+is_cluster=true
+
+[rabbitmq]
+#Select a node as the execution node,
+#and add the parameter master=true to this node
+#E.g: 192.168.1.100 master=true
+
+[rabbitmq:vars]
+master=false
+is_cluster=true
+
+[mariadb_galera]
+#Select a node as the execution node,
+#and add the parameter master=true to this node
+#E.g: 192.168.1.100 master=true
+
+[mariadb_galera:vars]
+master=false
+
+[mariadb]

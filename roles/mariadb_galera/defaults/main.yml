@@ -1,0 +1,44 @@
+---
+mysql_pkgs:
+  - MySQL-python
+  - gcc
+  - gcc-c++
+  - perl-DBD-MySQL
+  - socat
+  - libev
+  - openssl
+  - openssl-devel
+  - perl-IO-Socket-SSL
+  - openssl098e
+  - wget
+  - libaio
+  - boost-program-options
+  - galera
+  - lsof
+  - perl-Compress-Raw-Bzip2
+  - perl-Compress-Raw-Zlib
+  - perl-DBI
+  - perl-Data-Dumper
+  - perl-IO-Compress.noarch
+  - perl-Net-Daemon.noarch
+  - perl-PlRPC.noarch
+  - rsync
+  - xinetd
+
+percona_xtrabackup: "percona-xtrabackup-24-2.4.7-2.el7.x86_64.rpm"
+mariadb: "mariadb-10.1.22-linux-systemd-x86_64.tar.gz"
+mariadb_version: "mariadb-10.1.22-linux-systemd-x86_64"
+
+mariadb_dir: "/usr/local/mysql"
+data_dir: "/usr/local/mysql/data"
+mysql_cnf: "/etc/my.cnf"
+
+wsrep_provider: "/usr/lib64/galera/libgalera_smm.so"
+
+#mariadb_ip: "10.0.38.193,10.0.38.191,10.0.38.192"
+
+mysql_sst_user: "sstuser"
+mysql_sst_dbpass: "65tfde32wsx"
+cluster_check_user: "checkuser"
+cluster_check_user_dbpass: "5tgbcwer31qaz"
+cluster_check_port: "39000"

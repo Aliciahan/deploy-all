@@ -1,0 +1,10 @@
+---
+- name: Install iptables-services
+  yum:
+    name: "iptables-services"
+    state: "installed"
+
+- name: Enable the iptables service
+  service:
+    name: "iptables"
+    enabled: "yes"

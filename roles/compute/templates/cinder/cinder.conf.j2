@@ -1,0 +1,59 @@
+[DEFAULT]
+auth_strategy = keystone
+my_ip = {{ ansible_default_ipv4.address }}
+enabled_backends = ceph
+glance_api_servers = http://{{ controller_vip }}:{{ glance_api_port }}
+glance_api_version = 2
+backup_driver = cinder.backup.drivers.ceph
+backup_ceph_conf = /etc/ceph/ceph.conf
+backup_ceph_user = cinder-backup
+backup_ceph_chunk_size = 134217728
+backup_ceph_pool = backups
+backup_ceph_stripe_unit = 0
+backup_ceph_stripe_count = 0
+restore_discard_excess_bytes = true
+
+[ceph]
+volume_driver = cinder.volume.drivers.rbd.RBDDriver
+rbd_pool = volumes
+rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_flatten_volume_from_snapshot = false
+rbd_max_clone_depth = 5
+rbd_store_chunk_size = 4
+rados_connect_timeout = -1
+glance_api_version = 2
+rbd_user = cinder
+rbd_secret_uuid = {{ secret_uuid }}
+
+[database]
+connection = mysql+pymysql://cinder:{{ cinder_dbpass }}@{{ mysql_host }}/cinder
+
+[oslo_messaging_notifications]
+driver = messagingv2
+
+[oslo_messaging_rabbit]
+{% if is_cluster == "true" %}
+rabbit_hosts={{ rabbitmq_hosts }}
+rabbit_retry_interval=1
+rabbit_retry_backoff=2
+rabbit_max_retries=0
+rabbit_ha_queues=true
+{% else %}
+rabbit_host={{ controller_vip }}
+{% endif %}
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_pass }}
+
+[keystone_authtoken]
+auth_uri = http://{{ controller_vip }}:{{ keystone_public_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+memcached_servers = {{ memcached_servers }}
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = cinder
+password = {{ cinder_pass }}
+
+[oslo_concurrency]
+lock_path = /var/lib/cinder/tmp

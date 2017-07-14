@@ -1,0 +1,18 @@
+---
+- include: base.yml
+#- include: copy_base_repo.yml
+#- include: add_ssh_pubkey.yml
+- include: optimize_users_and_groups.yml
+#- include: add_user.yml
+#- include: limits_config.yml
+- include: history_config.yml
+- include: selinux_disable.yml
+#- include: copy_epel_repo.yml
+- include: install_package.yml
+#- include: chrony_install_and_config.yml
+#- include: network_config.yml
+#- include: sysctl_config.yml
+#- include: dns_config.yml
+#- include: ntp_install_and_config.yml
+#- include: disable_system_log_cut.yml
+#- include: reboot.yml

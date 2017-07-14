@@ -1,0 +1,8 @@
+---
+- name: Create local sshkey
+  hosts: 127.0.0.1
+  gather_facts: false
+  tasks:
+  - name: Check or create ssh key
+    shell: creates=~/.ssh/id_rsa.pub ssh-keygen -t rsa -P "" -f ~/.ssh/id_rsa
+    tags: local_sshkey_create

@@ -1,0 +1,60 @@
+---
+- name: Install package to nova
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-neutron
+    - openstack-neutron-ml2
+    - openstack-neutron-openvswitch
+    - ebtables
+
+- name: Copy file
+  template: src={{ item.src }}  dest={{ item.dest }}
+  with_items:
+    - { src: "neutron/l3_agent_ini.j2", dest: "/etc/neutron/l3_agent.ini" }
+    - { src: "neutron/metadata_agent_ini.j2", dest: "/etc/neutron/metadata_agent.ini" }
+    - { src: "neutron/neutron_conf.j2", dest: "/etc/neutron/neutron.conf" }
+    - { src: "neutron/openvswitch_agent_ini.j2", dest: "/etc/neutron/plugins/ml2/openvswitch_agent.ini" }
+
+- name: Config tunnel_interface
+  shell: local_ip=`ip addr show {{ tunnel_interface }} | grep -Po '(?<=inet ).*(?=\/)'`;sed -i "s/^local_ip.*$/local_ip = $local_ip/g" /etc/neutron/plugins/ml2/openvswitch_agent.ini
+
+- name: Add modprobe br_netfilter
+  modprobe: name=br_netfilter state=present
+
+- name: Edit nova node /etc/sysctl.conf
+  sysctl: sysctl_file=/etc/sysctl.conf name={{ item.name }} state=present value={{ item.value }}
+  with_items:
+    - { name: "net.ipv4.conf.all.rp_filter", value: "0" }
+    - { name: "net.ipv4.conf.default.rp_filter", value: "0" }
+    - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+    - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+    - { name: "net.ipv4.ip_forward", value: "1" }
+
+- name: Restart ovs-ctl service
+  service: name=openvswitch state=restarted enabled=yes
+
+- name: Create ovs-vsctl bridge br-ex
+  openvswitch_bridge:
+    bridge: br-ex
+    state: present
+
+- name: Add port to bridge br-ex
+  openvswitch_port:
+    bridge: br-ex
+    port: "{{ public_interface }}"
+    state: present
+
+- name: Turn off the network GRO function for public_interface_name
+  shell: "ethtool -K {{ public_interface }} gro off"
+
+- name: Reboot the following services in order to nova node
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - openstack-nova-compute
+    - neutron-openvswitch-agent
+    - neutron-metadata-agent
+    - neutron-l3-agent
+    - neutron-dhcp-agent
+
+- name: Enable service neutron-ovs-cleanup
+  service: name=neutron-ovs-cleanup enabled=yes

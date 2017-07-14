@@ -1,0 +1,56 @@
+[DEFAULT]
+core_plugin = ml2
+service_plugins = router,qos
+allow_overlapping_ips = True
+auth_strategy = keystone
+notify_nova_on_port_status_changes = True
+notify_nova_on_port_data_changes = True
+router_distributed = True
+dhcp_agents_per_network = 2
+enable_snat_by_default = false
+api_paste_config = api-paste.ini
+dhcp_lease_duration = -1
+notification_drivers=messaging
+enable_fip_rate_limit=true
+fip_rate_limit_default_rate=1000
+global_physnet_mtu = 1550
+
+[database]
+connection = mysql+pymysql://neutron:{{ neutron_dbpass }}@{{ mysql_host }}/neutron
+
+[keystone_authtoken]
+auth_uri = http://{{ controller_vip }}:{{ keystone_public_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+memcached_servers = {{ memcached_servers }}
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = neutron
+password = {{ neutron_pass }}
+
+[nova]
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+region_name = RegionOne
+project_name = service
+username = nova
+password = {{ nova_pass }}
+
+[oslo_messaging_rabbit]
+{% if is_cluster == "true" %}
+rabbit_hosts={{ rabbitmq_hosts }}
+rabbit_retry_interval=1
+rabbit_retry_backoff=2
+rabbit_max_retries=0
+rabbit_ha_queues=true
+{% else %}
+rabbit_host={{ controller_vip }}
+{% endif %}
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_pass }}
+
+[oslo_concurrency]
+lock_path = /var/lib/neutron/tmp

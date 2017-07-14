@@ -1,0 +1,5 @@
+---
+- include: install_config_cobbler_server.yml
+#- include: system_images_import_centos6_5.yml
+#- include: system_images_import_centos7_2.yml
+#- include: system_images_import_centos7_3.yml

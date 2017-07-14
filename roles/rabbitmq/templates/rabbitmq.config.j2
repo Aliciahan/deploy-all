@@ -1,0 +1,13 @@
+[
+ {rabbit,
+  [
+    {tcp_listeners, [{{ rabbitmq_port }}]},
+        {cluster_partition_handling, pause_minority},
+    {loopback_users, []}
+  ]},
+
+ {log_levels,
+  [
+    {connection, info}
+  ]}
+].

@@ -1,0 +1,13 @@
+---
+- name: Create dir /etc/zabbix/scripts/
+  file: path=/etc/zabbix/scripts/ state=directory mode=0755
+
+- name: Copy process monitor scripts
+  copy: src={{ item }} dest=/etc/zabbix/scripts/ owner=zabbix mode=755
+  with_fileglob:
+    - files/scripts/base/*
+
+- name: Copy zabbix-agent configure
+  template: src=templates/zabbix_agentd.conf.j2 dest=/etc/zabbix/zabbix_agentd.conf
+  notify:
+    - Restart zabbix agent

@@ -1,0 +1,83 @@
+---
+- name: Install keystone and dependence packages
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-keystone
+    - httpd
+    - mod_wsgi
+
+- name: Keystone config
+  template: src=keystone/keystone.conf.j2 dest=/etc/keystone/keystone.conf
+
+- name: Init keystone database
+  shell: su -s /bin/sh -c "keystone-manage db_sync" keystone
+  when: master == 'true' or is_cluster != 'true'
+
+- name: Initialize Fernet key repositories
+  shell: keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone;keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+
+- name: Pull keystone key to /tmp
+  synchronize: mode=pull src={{ item.src }} dest={{ item.dest }} archive=yes checksum=yes
+  with_items:
+    - { src: '/etc/keystone/credential-keys/0',dest: '/tmp/credential-keys-0' }
+    - { src: '/etc/keystone/credential-keys/1',dest: '/tmp/credential-keys-1' }
+    - { src: '/etc/keystone/fernet-keys/0',dest: '/tmp/fernet-keys-0' }
+    - { src: '/etc/keystone/fernet-keys/1',dest: '/tmp/fernet-keys-1' }
+  when: master == 'true' and is_cluster == 'true'
+
+- name: Copy keystone key
+  copy: src={{ item.src }} dest={{ item.dest }} owner=keystone group=keystone mode=0600
+  with_items:
+    - { src: '/tmp/credential-keys-0',dest: '/etc/keystone/credential-keys/0' }
+    - { src: '/tmp/credential-keys-1',dest: '/etc/keystone/credential-keys/1' }
+    - { src: '/tmp/fernet-keys-0',dest: '/etc/keystone/fernet-keys/0' }
+    - { src: '/tmp/fernet-keys-1',dest: '/etc/keystone/fernet-keys/1' }
+  when: master != 'true' and is_cluster == 'true'
+
+- name: Delete keystone key
+  local_action: file path={{ item }} state=absent
+  with_items:
+    - /tmp/credential-keys-0
+    - /tmp/credential-keys-1
+    - /tmp/fernet-keys-0
+    - /tmp/fernet-keys-1
+  run_once: true
+
+- name: Bootstrap the Identity service
+  shell: keystone-manage bootstrap --bootstrap-password {{ admin_pass }} --bootstrap-admin-url http://{{ controller_vip }}:{{ keystone_admin_port }}/v3/ --bootstrap-internal-url http://{{ controller_vip }}:{{ keystone_admin_port }}/v3/ --bootstrap-public-url http://{{ controller_vip }}:{{ keystone_public_port }}/v3/ --bootstrap-region-id RegionOne
+  when: master == 'true' or is_cluster != 'true'
+
+- name: Config apache
+  shell: sed -i 's/^#*ServerName.*$/ServerName {{ controller_vip }}/g' /etc/httpd/conf/httpd.conf
+
+- name: Create a link to the /usr/share/keystone/wsgi-keystone.conf file
+  file: src=/usr/share/keystone/wsgi-keystone.conf dest=/etc/httpd/conf.d/wsgi-keystone.conf state=link
+
+- name: Be sure httpd is running and enabled
+  service: name=httpd state=restarted enabled=yes
+
+- name: Sync admin-openrc.sh
+  template: src=keystone/admin-openrc.sh.j2 dest=/root/admin-openrc.sh mode=0755
+
+- name: Create a domain, projects, users, and roles
+  shell: '{{ item }}'
+  with_items:
+    - sleep 15
+    - openstack project create --domain default --description "Service Project" service
+    - openstack project create --domain default --description "Demo Project" demo
+    - openstack user create --domain default --password {{ demo_pass }} demo
+    - openstack role create user
+    - openstack role add --project demo --user demo user
+  when: master == 'true' or is_cluster != 'true'
+  environment:
+    OS_USERNAME: admin
+    OS_PASSWORD: '{{ admin_pass }}'
+    OS_PROJECT_NAME: admin
+    OS_USER_DOMAIN_NAME: Default
+    OS_PROJECT_DOMAIN_NAME: Default
+    OS_AUTH_URL: http://{{ controller_vip }}:{{ keystone_admin_port }}/v3
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+
+- name: Config /etc/keystone/keystone-paste.ini
+  shell: sed -i '/request_id admin_token_auth/s/request_id admin_token_auth/request_id/g' /etc/keystone/keystone-paste.ini

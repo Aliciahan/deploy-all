@@ -1,0 +1,12 @@
+ListenPort: 10051
+iptables_accept_port:
+  - 10051
+  - 80
+LogFile: /var/log/zabbix/zabbix_server.log
+LogFileSize: 0
+DBHost: 127.0.0.1
+DBName: zabbix
+DBUser: zabbix
+DBPassword: sdwci31n1j31
+AlertScriptsPath: /etc/zabbix/scripts
+CacheSize: 1024M

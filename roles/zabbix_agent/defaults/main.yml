@@ -1,0 +1,5 @@
+#zabbix_server_ip: 172.16.184.134
+LogFile: /var/log/zabbix/zabbix_agentd.log
+ListenPort: 10050
+iptables_accept_port:
+  - 10050

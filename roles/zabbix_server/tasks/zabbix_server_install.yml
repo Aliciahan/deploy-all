@@ -1,0 +1,11 @@
+---
+- name: Install zabbix server packages
+  yum: name={{ item }}
+  with_items:
+    - zabbix-server
+    - zabbix-web
+    - zabbix-server-mysql
+    - zabbix-web-mysql
+    - mariadb-server
+    - mariadb
+    - MySQL-python

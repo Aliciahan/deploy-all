@@ -1,0 +1,4 @@
+---
+#- include: zabbix_agent_iptables.yml
+- include: zabbix_agent_install.yml
+- include: zabbix_agent_config.yml

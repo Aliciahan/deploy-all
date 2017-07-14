@@ -1,0 +1,31 @@
+---
+- name: Install cinder packages
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-cinder
+    - python-crypto
+    - python-oslo-db
+    - python-oslo-log
+    - MySQL-python
+
+- name: Copy cinder config
+  template: src=cinder/cinder.conf.j2 dest=/etc/cinder/cinder.conf
+
+- name: Copy cinder ceph key file
+  copy: src={{ item.src }} dest={{ item.dest }} owner=cinder group=cinder
+  with_items:
+    - { src: '/tmp/ceph.client.cinder-backup.keyring', dest: '/etc/ceph/ceph.client.cinder-backup.keyring' }
+    - { src: '/tmp/ceph.client.cinder.keyring', dest: '/etc/ceph/ceph.client.cinder.keyring' }
+
+- name: Copy ceph config file
+  copy: src=/tmp/ceph.conf dest=/etc/ceph/ceph.conf force=no
+
+- name: Start cinder related services
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - openstack-cinder-volume.service
+    - openstack-cinder-backup.service
+
+- name: Restart openstack-nova-compute service
+  service: name=openstack-nova-compute state=restarted
+  ignore_errors: True

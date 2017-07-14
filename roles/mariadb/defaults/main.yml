@@ -1,0 +1,28 @@
+---
+mysql_pkgs:
+  - MySQL-python
+  - gcc
+  - gcc-c++
+  - perl-DBD-MySQL
+  - libev
+  - openssl
+  - openssl-devel
+  - perl-IO-Socket-SSL
+  - openssl098e
+  - wget
+  - libaio
+  - boost-program-options
+  - galera
+  - lsof
+  - perl-Compress-Raw-Bzip2
+  - perl-Compress-Raw-Zlib
+  - perl-DBI
+  - perl-Data-Dumper
+  - perl-IO-Compress.noarch
+  - perl-Net-Daemon.noarch
+  - perl-PlRPC.noarch
+mariadb: "mariadb-10.1.22-linux-systemd-x86_64.tar.gz"
+mariadb_version: "mariadb-10.1.22-linux-systemd-x86_64"
+mariadb_dir: "/usr/local/mysql"
+data_dir: "/usr/local/mysql/data"
+mysql_cnf: "/etc/my.cnf"

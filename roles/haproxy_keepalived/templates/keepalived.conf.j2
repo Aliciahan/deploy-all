@@ -1,0 +1,51 @@
+global_defs {
+   notification_email {
+     keeplived@system.com
+   }
+   notification_email_from lcoalhost@system.com
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id {{ ansible_hostname }}
+}
+
+vrrp_script chk_http_port {
+    script "/etc/keepalived/check_haproxy.sh"
+    interval 2
+    weight 2
+}
+
+vrrp_instance VI_1 {
+{% if master == "true" %}
+    state MASTER
+{% else %}
+    state BACKUP
+{% endif %}
+    interface {{ ansible_default_ipv4.interface }}
+    virtual_router_id 50
+{% if master == "true" %}
+    priority 90
+{% else %}
+    priority 89
+{% endif %}
+    nopreempt
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 2376
+    }
+    virtual_ipaddress {
+        {{ controller_vip }}/24 dev {{ ansible_default_ipv4.interface }}
+    }
+    unicast_src_ip {{ ansible_default_ipv4.address }}
+    unicast_peer {
+{% if ansible_default_ipv4.address == keepalived_nodea %}
+         {{ keepalived_nodeb }}
+{% else %}
+         {{ keepalived_nodea }}
+{% endif %}
+                 }
+
+    track_script {
+         chk_http_port
+     }
+}

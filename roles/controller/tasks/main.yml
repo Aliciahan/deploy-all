@@ -1,0 +1,10 @@
+---
+- include: database_create.yml
+  when: master == 'true' or is_cluster != 'true'
+- include: base_packages_install.yml
+- include: keystone_install.yml
+- include: glance_install.yml
+- include: nova_install.yml
+- include: neutron_install.yml
+- include: cinder_install.yml
+- include: dashboard_install.yml

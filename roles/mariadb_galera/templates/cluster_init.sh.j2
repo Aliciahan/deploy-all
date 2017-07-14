@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#:***********************************************
+#:Program: MariaDB Cluster Initialize the script
+#:
+#:Author: lian-jihong@qq.com
+#:
+#:History: 2017-06-27
+#:
+#:Version: 1.0
+#:***********************************************
+if {{ master }}; then
+    /usr/local/mysql/bin/mysqld_safe --defaults-file=/etc/my.cnf --wsrep-new-cluster --user=mysql &
+    sleep 30s
+    /usr/local/mysql/bin/mysql -uroot -e "delete from mysql.user where user!='root' or host!='localhost';"
+    /usr/local/mysql/bin/mysql -uroot -e "drop database test;"
+    /usr/local/mysql/bin/mysql -uroot -e "grant all privileges on *.* to '{{ mysql_sst_user }}'@'%' identified by '{{ mysql_sst_dbpass }}';"
+    /usr/local/mysql/bin/mysql -uroot -e "grant usage on *.* to '{{ mysql_sst_user }}'@'%' identified by '{{ mysql_sst_dbpass }}';"
+    /usr/local/mysql/bin/mysql -uroot -e "flush privileges;"
+else
+    sleep 20s
+    /usr/local/mysql/bin/mysqld_safe --defaults-file=/etc/my.cnf --user=mysql &
+fi

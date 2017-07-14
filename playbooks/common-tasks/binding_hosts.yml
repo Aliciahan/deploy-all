@@ -1,0 +1,7 @@
+---
+- name: Config /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: '{{ hostvars[item].ansible_default_ipv4.address }} {{ hostvars[item].ansible_hostname }}'
+    state: present
+  with_items: '{{ ansible_play_hosts }}'

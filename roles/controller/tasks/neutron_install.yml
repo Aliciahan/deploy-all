@@ -1,0 +1,86 @@
+---
+- name: Create user for neutron
+  shell: '{{ item }}'
+  with_items:
+    - 'openstack user create --domain Default --password {{ neutron_pass }} neutron'
+    - 'openstack role add --project service --user neutron admin'
+    - 'openstack service create --name neutron --description "openstack network" network'
+    - 'openstack endpoint create --region RegionOne network public http://{{ controller_vip }}:{{ neutron_api_port }}'
+    - 'openstack endpoint create --region RegionOne network internal http://{{ controller_vip }}:{{ neutron_api_port }}'
+    - 'openstack endpoint create --region RegionOne network admin http://{{ controller_vip }}:{{ neutron_api_port }}'
+  when: master == 'true' or is_cluster != 'true'
+  environment:
+    OS_PROJECT_DOMAIN_NAME: "Default"
+    OS_USER_DOMAIN_NAME: "Default"
+    OS_PROJECT_NAME: "admin"
+    OS_USERNAME: "admin"
+    OS_PASSWORD: "{{ admin_pass }}"
+    OS_AUTH_URL: "http://{{ controller_vip }}:{{ keystone_admin_port }}/v3"
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+
+- name: Install package to control
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-neutron
+    - openstack-neutron-ml2
+    - openstack-neutron-openvswitch
+    - ebtables
+
+- name: Copy file
+  template: src='{{ item.src }}' dest='{{ item.dest }}'
+  with_items:
+    - { src: "neutron/neutron_conf.j2", dest: "/etc/neutron/neutron.conf" }
+    - { src: "neutron/openvswitch_agent_ini.j2", dest: "/etc/neutron/plugins/ml2/openvswitch_agent.ini" }
+    - { src: "neutron/ml2_conf_ini.j2", dest: "/etc/neutron/plugins/ml2/ml2_conf.ini" }
+    - { src: "neutron/metadata_agent_ini.j2", dest: "/etc/neutron/metadata_agent.ini" }
+    - { src: "neutron/l3_agent_ini.j2", dest: "/etc/neutron/l3_agent.ini" }
+    - { src: "neutron/dnsmasq-neutron_conf.j2", dest: "/etc/neutron/dnsmasq-neutron.conf" }
+    - { src: "neutron/dhcp_agent_ini.j2", dest: "/etc/neutron/dhcp_agent.ini" }
+
+- name: Config tunnel_interface
+  shell: local_ip=`ip addr show {{ tunnel_interface }} | grep -Po '(?<=inet ).*(?=\/)'`;sed -i "s/^local_ip.*$/local_ip = $local_ip/g" /etc/neutron/plugins/ml2/openvswitch_agent.ini
+
+- name: ln ml2_conf.ini
+  file: src=/etc/neutron/plugins/ml2/ml2_conf.ini dest=/etc/neutron/plugin.ini state=link
+
+- name: Add modprobe br_netfilter
+  modprobe: name=br_netfilter state=present
+
+- name: Edit sysctl.conf
+  sysctl: sysctl_file=/etc/sysctl.conf name={{ item.name }} state=present value={{ item.value }}
+  with_items:
+    - { name: "net.ipv4.ip_forward", value: "1" }
+    - { name: "net.ipv4.conf.all.rp_filter", value: "0" }
+    - { name: "net.ipv4.conf.default.rp_filter", value: "0" }
+
+- name: Init neutron database
+  shell: 'su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron'
+  when: master == 'true' or is_cluster != 'true'
+
+- name: Restart ovs-ctl service
+  service: name=openvswitch state=restarted enabled=yes
+
+- name: Create ovs-vsctl bridge br-ex
+  openvswitch_bridge:
+    bridge: br-ex
+    state: present
+
+- name: Add port to bridge br-ex
+  openvswitch_port:
+    bridge: br-ex
+    port: "{{ public_interface }}"
+    state: present
+
+- name: Turn off the network GRO function for public_interface_name
+  shell: "ethtool -K {{ public_interface }} gro off"
+
+- name: Reboot the following services in order to control node
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - openstack-nova-api
+    - neutron-server
+    - neutron-openvswitch-agent
+    - neutron-dhcp-agent
+    - neutron-metadata-agent
+    - neutron-l3-agent

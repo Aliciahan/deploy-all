@@ -1,0 +1,5 @@
+---
+- include: base_packages_install.yml
+- include: nova_install.yml
+- include: neutron_install.yml
+- include: cinder_install.yml

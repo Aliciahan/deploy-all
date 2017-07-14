@@ -1,0 +1,65 @@
+---
+#rabbitmq variables
+rabbitmq_user: openstack
+rabbitmq_pass: RABBIT_PASS
+rabbitmq_port: 5672
+
+#mysql variables
+mysql_login_host: "127.0.0.1"
+mysql_login_port: "3306"
+
+keystone_dbpass: "qazwsxedc"
+glance_dbpass: "qazwsxedc"
+cinder_dbpass: "qazwsxedc"
+neutron_dbpass: "qazwsxedc"
+nova_dbpass: "qazwsxedc"
+
+#port variables
+dashboard_port: 10000
+glance_api_port: 10002
+glance_registry_port: 10004
+keystone_admin_port: 10006
+keystone_public_port: 10008
+nova_api_port: 10010
+nova_metadata_port: 10012
+cinder_port: 10014
+vnc_port: 10016
+neutron_api_port: 10018
+ceilometer_port: 10020
+mysql_port: 10024
+
+#ip variables
+#controller_vip: 10.0.192.80
+#controller1_ip: 10.0.192.61
+#controller2_ip: 10.0.192.62
+#controller3_ip: 10.0.192.63
+mysql_host: '{{ controller_vip }}:{{ mysql_port }}'
+rabbitmq_hosts: '{{ controller1_ip }},{{ controller2_ip }},{{ controller3_ip }}'
+memcached_servers: '{{ controller1_ip }}:11211,{{ controller2_ip }}:11211,{{ controller3_ip }}:11211'
+dashboard_memcached: "'{{ controller1_ip }}:11211','{{ controller2_ip }}:11211','{{ controller3_ip }}:11211'"
+vnc_vip: '{{ controller_vip }}:{{ vnc_port }}'
+
+#keystone pass
+admin_pass: ADMIN_PASS
+demo_pass: DEMO_PASS
+nova_pass: NOVA_PASS
+neutron_pass: NEUTRON_PASS
+glance_pass: GLANCE_PASS
+cinder_pass: CINDER_PASS
+
+#metadata variables
+metadata_secret: METADATA_SECRET
+
+#network variables
+tunnel_interface: bond0.2000
+public_interface: bond2.213
+live_migration_interface: bond0.2000
+
+#ceph variables
+secret_uuid: 817cf80b-d3c5-47b2-9a70-aa578e539107
+
+#mariadb galera cluster variables
+mariadb_ip: "{{ controller1_ip }},{{ controller2_ip }},{{ controller3_ip }}"
+percona_xtrabackup: "percona-xtrabackup-24-2.4.7-2.el7.x86_64.rpm"
+mariadb: "mariadb-10.1.22-linux-systemd-x86_64.tar.gz"
+mariadb_version: "mariadb-10.1.22-linux-systemd-x86_64"

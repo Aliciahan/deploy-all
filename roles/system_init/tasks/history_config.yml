@@ -1,0 +1,5 @@
+---
+- name: History config
+  lineinfile: dest=/etc/profile state=present line='export HISTSIZE=20000'
+  notify: Source profile
+  tags: history_config

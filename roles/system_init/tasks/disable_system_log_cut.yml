@@ -1,0 +1,5 @@
+---
+- name: Disable system log cutting
+  template: src=logrotate.conf.j2 dest=/etc/logrotate.conf
+  notify: Restart rsyslog service
+  tags: disable_log_cut

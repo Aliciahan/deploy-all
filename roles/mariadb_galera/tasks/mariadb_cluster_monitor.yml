@@ -1,0 +1,24 @@
+---
+- name: Create temporarily execute the user
+  shell: '{{ item }}'
+  with_items:
+    - /usr/local/mysql/bin/mysql -uroot -e "grant all on *.* to {{ cluster_check_user }}@'127.0.0.1' identified by '{{ cluster_check_user_dbpass }}';"
+    - /usr/local/mysql/bin/mysql -uroot -e "flush privileges;"
+  when: master == "true"
+
+- name: Copy file clustercheck
+  template: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+  with_items:
+    - { src: "mariadbcheck.j2", dest: "/etc/xinetd.d/mariadbcheck", mode: "0744" }
+    - { src: "clustercheck.j2", dest: "/usr/bin/clustercheck", mode: "0744" }
+
+- name: Edit /etc/services
+  lineinfile: dest={{ item.dest }} line={{ item.line }}
+  with_items:
+    - { dest: "/etc/services", line: "mariadbcheck    {{ cluster_check_port }}/tcp         #mariadbcheck" }
+
+- name: Restart xinetd
+  service:
+    name: "xinetd"
+    state: "restarted"
+    enabled: yes

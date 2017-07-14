@@ -1,0 +1,17 @@
+---
+- name: Install memcached
+  yum: name={{ item }} state=present
+  with_items:
+    - memcached
+    - python-memcached
+  tags: install_memcached
+
+- name: Config memcached
+  copy: src=memcached dest=/etc/sysconfig/memcached mode=644
+  notify: Restart memcached
+  when: is_cluster == 'true'
+  tags: install_memcached
+
+- name: Be sure memcached is running and enabled
+  service: name=memcached state=started enabled=yes
+  tags: install_memcached

@@ -1,0 +1,4 @@
+---
+- name: Cover the CentOS-Base repository definition
+  template: src=CentOS-Base.repo.j2 dest=/etc/yum.repos.d/CentOS-Base.repo
+  tags: yum_repo_config

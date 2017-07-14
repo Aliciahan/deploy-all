@@ -1,0 +1,4 @@
+---
+- include: mariadb_cluster_install.yml
+- include: mariadb_cluster_monitor.yml
+  tags: mariadb_galera_monitor

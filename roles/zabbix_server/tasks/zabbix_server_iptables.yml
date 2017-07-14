@@ -1,0 +1,7 @@
+---
+- name: Config zabbix server iptables
+  iptables: action=insert chain=INPUT jump=ACCEPT protocol=tcp destination_port={{ item }}
+  notify:
+    - Insert tcp rule to /etc/sysconfig/iptables
+  with_items:
+    - "{{ iptables_accept_port }}"

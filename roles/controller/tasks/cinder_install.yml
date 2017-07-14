@@ -1,0 +1,40 @@
+---
+- name: Install cinder packages
+  yum: name=openstack-cinder state=present
+
+- name: Create cinder domain, projects, users, and roles
+  shell: "{{ item }}"
+  with_items:
+    - 'openstack user create --domain default --password {{ cinder_pass }} cinder'
+    - 'openstack role add --project service --user cinder admin'
+    - 'openstack service create --name cinder --description "OpenStack Block Storage" volume'
+    - 'openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2'
+    - 'openstack endpoint create --region RegionOne volume public http://{{ controller_vip }}:{{ cinder_port }}/v1/%\(tenant_id\)s'
+    - 'openstack endpoint create --region RegionOne volume internal http://{{ controller_vip }}:{{ cinder_port }}/v1/%\(tenant_id\)s'
+    - 'openstack endpoint create --region RegionOne volume admin http://{{ controller_vip }}:{{ cinder_port }}/v1/%\(tenant_id\)s'
+    - 'openstack endpoint create --region RegionOne volumev2 public http://{{ controller_vip }}:{{ cinder_port }}/v2/%\(tenant_id\)s'
+    - 'openstack endpoint create --region RegionOne volumev2 internal http://{{ controller_vip }}:{{ cinder_port }}/v2/%\(tenant_id\)s'
+    - 'openstack endpoint create --region RegionOne volumev2 admin http://{{ controller_vip }}:{{ cinder_port }}/v2/%\(tenant_id\)s'
+  when: master == 'true' or is_cluster != 'true'
+  environment:
+    OS_PROJECT_DOMAIN_NAME: default
+    OS_USER_DOMAIN_NAME: default
+    OS_PROJECT_NAME: admin
+    OS_USERNAME: admin
+    OS_PASSWORD: '{{ admin_pass }}'
+    OS_AUTH_URL: http://{{ controller_vip }}:{{ keystone_admin_port }}/v3
+    OS_IDENTITY_API_VERSION: 3
+    OS_IMAGE_API_VERSION: 2
+
+- name: Cinder config
+  template: src=cinder/cinder.conf.j2 dest=/etc/cinder/cinder.conf
+
+- name: Init cinder database
+  shell: "su -s /bin/sh -c 'cinder-manage db sync' cinder"
+  when: master == 'true' or is_cluster != 'true'
+
+- name: Start openstack-cinder-api.service openstack-cinder-scheduler.service service
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - openstack-cinder-api.service
+    - openstack-cinder-scheduler.service

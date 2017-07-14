@@ -1,0 +1,8 @@
+#iptables_accept_port:
+#  - 5672
+#  - 15672
+#  - 25672
+#  - 4369
+rabbitmq_user: openstack
+rabbitmq_pass: RABBIT_PASS
+rabbitmq_port: 5672

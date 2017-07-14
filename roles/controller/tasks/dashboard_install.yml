@@ -1,0 +1,12 @@
+---
+- name: Install dashboard
+  yum: name=openstack-dashboard state=present
+
+- name: Copy dashboard configure file
+  template: src=dashboard/local_settings dest=/etc/openstack-dashboard/local_settings
+
+- name: Restart memcached and httpd service
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - memcached
+    - httpd

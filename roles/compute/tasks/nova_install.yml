@@ -1,0 +1,60 @@
+---
+- name: Nova packages install
+  yum: name={{ item }} state=present
+  with_items:
+    - openstack-nova-compute
+
+- name: Nova config
+  template: src=nova/nova.conf.j2 dest=/etc/nova/nova.conf
+
+- name: Config live_migration_interface
+  shell: live_migration_inbound_addr=`ip addr show {{ live_migration_interface }} | grep -Po '(?<=inet ).*(?=\/)'`;sed -i "s/^live_migration_inbound_addr.*$/live_migration_inbound_addr = $live_migration_inbound_addr/g" /etc/nova/nova.conf
+
+- name: Config libvirtd
+  lineinfile: dest=/etc/sysconfig/libvirtd state=present line={{ item }}
+  with_items:
+    - LIBVIRTD_ARGS="-l --config /etc/libvirt/libvirtd.conf"
+
+- name: Config libvirtd.conf
+  lineinfile: dest=/etc/libvirt/libvirtd.conf state=present line={{ item }}
+  with_items:
+    - listen_tls = 0
+    - listen_tcp = 1
+    - auth_tcp = "none"
+    - log_level = 3
+
+- name: Be sure nova and libvirtd service is running and enabled
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - libvirtd
+    - openstack-nova-compute
+
+- name: Sync ceph relate file
+  template: src={{ item.src }} dest={{ item.dest }}
+  with_items:
+    - { src: '/tmp/client.cinder.key',dest: '/etc/ceph/client.cinder.key' }
+    - { src: '/tmp/ceph.conf',dest: '/etc/ceph/ceph.conf' }
+    - { src: 'nova/secret.xml.j2',dest: '/etc/ceph/secret.xml' }
+    - { src: '/tmp/ceph.client.cinder.keyring', dest: '/etc/ceph/ceph.client.cinder.keyring' }
+
+- name: Config ceph.conf
+  blockinfile:
+    path: /etc/ceph/ceph.conf
+    block: |
+      [client]
+      rbd cache = true
+      rbd cache writethrough until flush = false
+      cache size =  67108864
+      rbd cache max dirty = 0
+      rbd cache max dirty age = 0
+      admin socket = /var/run/ceph/guests/$cluster-$type.$id.$pid.$cctid.asok
+      log file = /var/log/qemu/qemu-guest-$pid.log
+      rbd concurrent management ops = 20
+
+- name: Config ceph relate
+  shell: '{{ item }}'
+  with_items:
+    - virsh secret-define --file /etc/ceph/secret.xml
+    - virsh secret-set-value --secret {{ secret_uuid }} --base64 $(cat /etc/ceph/client.cinder.key)
+    - mkdir -p /var/run/ceph/guests/ /var/log/qemu/
+    - chown qemu:qemu /var/run/ceph/guests /var/log/qemu/

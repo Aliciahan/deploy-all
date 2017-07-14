@@ -1,0 +1,13 @@
+---
+- name: Add users
+  user: name={{ item.name }} uid={{ item.uid }} groups=wheel password={{ item.password }}
+  with_items:
+    - { name: 'syspub',uid: 1200,password: '$6$Vcb330YJ$sMlGuroKDMIBKdhdIIKM8v.FwPdI1DplEYCW6IFs3f/bpDbuAfRB.6bJuwAvC3u6D064NjwuldQhDl8oC9q9M.' }
+  tags: add_system_user
+
+- name: Sudoer config
+  lineinfile: dest=/etc/sudoers state=present line={{ item }} validate='visudo -cf %s'
+  with_items:
+    - 'User_Alias SYSADMINS = syspub'
+    - 'SYSADMINS       ALL=(ALL)       NOPASSWD: ALL'
+  tags: sudoer_config

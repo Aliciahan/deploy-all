@@ -1,0 +1,11 @@
+---
+- name: Restart zabbix agent
+  service: name=zabbix-agent state=restarted enabled=yes
+
+- name: Insert tcp rule to /etc/sysconfig/iptables
+  lineinfile:
+    path: /etc/sysconfig/iptables
+    insertafter: '^:OUTPUT ACCEPT '
+    line: '-A INPUT -p tcp -m tcp --dport {{ item }} -j ACCEPT'
+  with_items:
+    - "{{ iptables_accept_port }}"

@@ -1,0 +1,4 @@
+---
+- name: Copy the epel repository
+  template: src=epel.repo.j2 dest=/etc/yum.repos.d/epel.repo
+  tags: copy_epel_repo

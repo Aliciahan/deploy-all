@@ -1,0 +1,6 @@
+[epel]
+name=Extra Packages for Enterprise Linux {{ ansible_distribution_major_version }} - $basearch
+baseurl=http://{{ yum_repo_host }}/pub/epel/{{ ansible_distribution_major_version }}/$basearch
+failovermethod=priority
+enabled=1
+gpgcheck=0

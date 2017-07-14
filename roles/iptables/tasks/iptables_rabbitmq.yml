@@ -1,0 +1,20 @@
+---
+- name: Config rabbitmq iptables
+  iptables:
+    action: "insert"
+    chain: "INPUT"
+    jump: "ACCEPT"
+    protocol: "tcp"
+    destination_port: "{{ item }}"
+  with_items:
+    - "{{ iptables_rabbitmq_port }}"
+  tags: rabbitmq_iptables
+
+- name: Insert tcp rule to /etc/sysconfig/iptables
+  lineinfile:
+    path: /etc/sysconfig/iptables
+    insertafter: '^:OUTPUT ACCEPT '
+    line: '-A INPUT -p tcp -m multiport --dport {{ item }} -j ACCEPT'
+  with_items:
+    - "{{ iptables_rabbitmq_port }}"
+  tags: rabbitmq_iptables

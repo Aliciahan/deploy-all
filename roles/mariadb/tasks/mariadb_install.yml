@@ -1,0 +1,54 @@
+---
+- name: Install the  packages
+  yum: name={{ item }} state=present
+  with_items:
+    - "{{ mysql_pkgs }}"
+
+- name: Add group mysql
+  group: name=mysql state=present
+
+- name: Add user mysql
+  user: name=mysql group=mysql home=/home/mysql state=present
+
+- name: Copy files mariadb
+  copy: src={{ mariadb }} dest=/usr/local/{{ mariadb }}
+
+- name: Tar mariadb file to /usr/local
+  unarchive: src=/usr/local/{{ mariadb }} dest=/usr/local/ remote_src=yes
+
+- name: Rename mariadb file
+  shell: "mv /usr/local/{{ mariadb_version }} {{ mariadb_dir }}"
+
+- name: Mkdir log_bin
+  file: path={{ mariadb_dir }}/log-bin state=directory mode=0755
+
+- name: Chmod mysql:mysql /use/local/mysql
+  file: path={{ mariadb_dir }} owner=mysql group=mysql state=directory recurse=yes
+
+- name: Copy my.cnf
+  template: src=my.cnf.j2 dest={{ mysql_cnf }}
+
+- name: Install mariadb
+  shell: "{{ mariadb_dir }}/scripts/mysql_install_db
+  --basedir={{ mariadb_dir }} --datadir={{ data_dir }} --defaults-file={{
+  mysql_cnf }} --user=mysql"
+
+- name: Edit /etc/profile
+  lineinfile: dest={{ item.dest }} line={{ item.line }}
+  with_items:
+    - { dest: "/etc/profile", line: "export PATH=$PATH:/usr/local/mysql/bin" }
+    - { dest: "/etc/profile", line: "export LD_LIBRARY_PATH=/usr/local/mysql/lib" }
+  notify:
+    - Source profile
+
+- name: Copy cluster_init file
+  template: src=database_init.sh.j2 dest=/tmp/database_init.sh mode=0755
+
+- name: Exec cluster_init.sh
+  shell: "/tmp/database_init.sh"
+
+- name: Delete /tmp/cluster_init.sh
+  file: path=/tmp/database_init.sh state=absent
+
+- name: Delete mariadb install package
+  file: path=/usr/local/{{ mariadb }} state=absent

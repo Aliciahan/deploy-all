@@ -1,0 +1,81 @@
+[DEFAULT]
+notification_format=unversioned
+enabled_apis = osapi_compute,metadata
+auth_strategy = keystone
+my_ip = {{ ansible_default_ipv4.address }}
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+reserved_host_disk_mb=102400
+reserved_host_memory_mb=32768
+instance_usage_audit = True
+instance_usage_audit_period = hour
+notify_on_state_change = vm_and_task_state
+
+[oslo_messaging_notifications]
+driver = messagingv2
+
+[oslo_messaging_rabbit]
+{% if is_cluster == "true" %}
+rabbit_hosts={{ rabbitmq_hosts }}
+rabbit_retry_interval=1
+rabbit_retry_backoff=2
+rabbit_max_retries=0
+rabbit_ha_queues=true
+{% else %}
+rabbit_host={{ controller_vip }}
+{% endif %}
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_pass }}
+
+[keystone_authtoken]
+auth_uri = http://{{ controller_vip }}:{{ keystone_public_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+memcached_servers = {{ memcached_servers }}
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = {{ nova_pass }}
+
+[vnc]
+enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = {{ ansible_default_ipv4.address }}
+novncproxy_base_url = http://{{ vnc_vip }}/vnc_auto.html
+
+[glance]
+api_servers = http://{{ controller_vip }}:{{ glance_api_port }}
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+
+[libvirt]
+images_type = rbd
+images_rbd_pool = vms
+images_rbd_ceph_conf = /etc/ceph/ceph.conf
+rbd_user = cinder
+rbd_secret_uuid = {{ secret_uuid }}
+disk_cachemodes="network=writethrough"
+inject_password = false
+inject_key = false
+inject_partition = -2
+live_migration_tunnelled=true
+live_migration_permit_auto_converge=true
+live_migration_progress_timeout=0
+live_migration_completion_timeout=36000
+live_migration_downtime_steps=3
+live_migration_downtime_delay=3600
+live_migration_downtime=2000
+live_migration_inbound_addr = {{ live_migration_interface }}
+
+[neutron]
+url = http://{{ controller_vip }}:{{ neutron_api_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = {{ neutron_pass }}

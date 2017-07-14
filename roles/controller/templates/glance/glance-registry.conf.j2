@@ -1,0 +1,35 @@
+[DEFAULT]
+workers=8
+
+[database]
+connection = mysql+pymysql://glance:{{ glance_dbpass }}@{{ mysql_host }}/glance
+
+[oslo_messaging_notifications]
+driver = messagingv2
+
+[oslo_messaging_rabbit]
+{% if is_cluster == "true" %}
+rabbit_hosts={{ rabbitmq_hosts }}
+rabbit_retry_interval=1
+rabbit_retry_backoff=2
+rabbit_max_retries=0
+rabbit_ha_queues=true
+{% else %}
+rabbit_host={{ controller_vip }}
+{% endif %}
+rabbit_userid = {{ rabbitmq_user }}
+rabbit_password = {{ rabbitmq_pass }}
+
+[keystone_authtoken]
+auth_uri = http://{{ controller_vip }}:{{ neutron_api_port }}
+auth_url = http://{{ controller_vip }}:{{ keystone_admin_port }}
+memcached_servers = {{ memcached_servers }}
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = {{ glance_pass }}
+
+[paste_deploy]
+flavor = keystone

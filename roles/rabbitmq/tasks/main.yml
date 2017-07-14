@@ -1,0 +1,8 @@
+---
+#- include: rabbitmq_server_iptables.yml
+- include: rabbitmq_server_install.yml
+- include: rabbitmq_server_config.yml
+- include: rabbitmq_server_create_cluster.yml
+  when: is_cluster == 'true'
+- include: rabbitmq_server_add_user.yml
+- include: rabbitmq_server_plugin.yml

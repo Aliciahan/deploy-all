@@ -1,0 +1,5 @@
+---
+- hosts: memcached
+  gather_facts: false
+  roles:
+    - memcached

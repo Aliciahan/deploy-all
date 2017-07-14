@@ -1,0 +1,15 @@
+---
+- name: Del user
+  user: name={{ item }} state=absent remove=yes
+  with_items:
+    - adm
+    - lp
+    - shutdown
+    - halt
+  tags: del_user_and_group
+  ignore_errors: True
+
+- name: Del group
+  group: name=dip state=absent
+  tags: del_user_and_group
+  ignore_errors: True

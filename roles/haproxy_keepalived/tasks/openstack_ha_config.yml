@@ -1,0 +1,114 @@
+---
+- name: Insert into haproxy info /etc/haproxy/haproxy.cfg
+  blockinfile:
+    path: /etc/haproxy/haproxy.cfg
+    marker: "####"
+    insertafter: '####'
+    state: present
+    block: |
+        listen dashboard_cluster
+          bind {{ controller_vip }}:{{ dashboard_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:80 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:80 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:80 check inter 2000 rise 2 fall 5
+
+        listen keystone-public
+          bind {{ controller_vip }}:{{ keystone_public_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:5000 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:5000 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:5000 check inter 2000 rise 2 fall 5
+
+        listen keystone-admin
+          bind {{ controller_vip }}:{{ keystone_admin_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:35357  check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:35357  check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:35357  check inter 2000 rise 2 fall 5
+
+        listen nova-api
+          bind {{ controller_vip }}:{{ nova_api_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:8774  check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:8774  check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:8774  check inter 2000 rise 2 fall 5
+
+        listen nova-metadata-api
+          bind {{ controller_vip }}:{{ nova_metadata_port }}
+          balance roundrobin
+          option  tcpka
+          option  tcplog
+          server node-1 {{ node_1 }}:8775 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:8775 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:8775 check inter 2000 rise 2 fall 5
+
+        listen cinder-api
+          bind {{ controller_vip }}:{{ cinder_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:8776 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:8776 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:8776 check inter 2000 rise 2 fall 5
+
+        listen glance-api
+          bind {{ controller_vip }}:{{ glance_api_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:9292 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:9292 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:9292 check inter 2000 rise 2 fall 5
+
+        listen neutron
+          bind {{ controller_vip }}:{{ neutron_api_port }}
+          balance roundrobin
+          option  tcpka
+          option  httpchk
+          option  tcplog
+          server node-1 {{ node_1 }}:9696 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:9696 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:9696 check inter 2000 rise 2 fall 5
+
+        listen glance-registry
+          bind {{ controller_vip }}:{{ glance_registry_port }}
+          balance roundrobin
+          option  tcpka
+          option  tcplog
+          server node-1 {{ node_1 }}:9191 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:9191 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:9191 check inter 2000 rise 2 fall 5
+
+        listen mysqld
+          bind {{ controller_vip }}:{{ mysql_port }}
+          mode  tcp
+          balance  source
+          option  tcpka
+          server node-1 {{ node_1 }}:3306 check port {{ cluster_check_port }} inter 20s fastinter 2s downinter 2s rise 3 fall 3
+          server node-2 {{ node_2 }}:3306 backup check port {{ cluster_check_port }} inter 20s fastinter 2s downinter 2s rise 3 fall 3
+          server node-3 {{ node_3 }}:3306 backup check port {{ cluster_check_port }} inter 20s fastinter 2s downinter 2s rise 3 fall 3
+
+        listen spice_cluster
+          bind {{ controller_vip }}:{{ vnc_port }}
+          balance roundrobin
+          option  tcpka
+          option  tcplog
+          server node-1 {{ node_1 }}:6080 check inter 2000 rise 2 fall 5
+          server node-2 {{ node_2 }}:6080 check inter 2000 rise 2 fall 5
+          server node-3 {{ node_3 }}:6080 check inter 2000 rise 2 fall 5
+  notify: Restart haproxy

@@ -1,0 +1,16 @@
+---
+#Haproxy.cfg, keepalived.conf The value required
+#for the VIP parameter in the configuration file
+controller_vip: '{{ controller_vip }}'
+#High availability of two nodes IP
+keepalived_nodea: '{{ controller1_ip }}'
+keepalived_nodeb: '{{ controller2_ip }}'
+#The three nodes IP in openstack_ha_config.yml
+node_1: '{{ controller1_ip }}'
+node_2: '{{ controller2_ip }}'
+node_3: '{{ controller3_ip }}'
+#MariaDB_Galera Cluster status monitoring port
+cluster_check_port: "39000"
+#user password for look haproxy stats.
+haproxy_stats_user: "admin123"
+haproxy_stats_pass: "admin321"
